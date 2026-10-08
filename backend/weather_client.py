@@ -23,7 +23,9 @@ def fetch_weather(latitude, longitude):
     params = {
         "latitude": latitude,
         "longitude": longitude,
-        "current": ",".join(CURRENT_FIELDS),
+        "current": ",".join((*CURRENT_FIELDS, "rain", "cloud_cover",
+                             "surface_pressure", "wind_direction_10m",
+                             "wind_gusts_10m", "weather_code")),
         "timezone": "UTC",
         "timeformat": "iso8601",
         "temperature_unit": "celsius",
@@ -51,13 +53,16 @@ def parse_weather(data):
     """current를 검증하고 저장 가능한 dict로 반환한다.
 
     observed_at은 UTC ISO 8601, 온도는 °C, 습도는 %, 강수량은 mm,
-    풍속은 m/s이다. 시간대가 없는 API 시각은 요청한 UTC로 해석한다.
+    풍속·돌풍은 m/s, 강우량은 mm, 구름량은 %, 기압은 hPa, 풍향은 °이다.
+    시간대가 없는 API 시각은 요청한 UTC로 해석한다.
     잘못된 응답은 ValueError를 발생시킨다.
     """
     if not isinstance(data, dict) or not isinstance(data.get("current"), dict):
         raise ValueError("날씨 응답에 올바른 current 객체가 없습니다.")
     current = data["current"]
-    missing = [key for key in ("time", *CURRENT_FIELDS) if key not in current]
+    fields = (*CURRENT_FIELDS, "rain", "cloud_cover", "surface_pressure",
+              "wind_direction_10m", "wind_gusts_10m", "weather_code")
+    missing = [key for key in ("time", *fields) if key not in current]
     if missing:
         raise ValueError(f"날씨 응답에 필수 항목이 누락되었습니다: {', '.join(missing)}")
 
@@ -72,12 +77,15 @@ def parse_weather(data):
     except (ValueError, OverflowError) as exc:
         raise ValueError("관측 시각을 UTC ISO 8601 형식으로 변환할 수 없습니다.") from exc
 
-    for field in CURRENT_FIELDS:
+    for field in fields:
         value = current[field]
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise ValueError(f"날씨 항목 '{field}'은 숫자여야 합니다.")
         if isinstance(value, float) and not math.isfinite(value):
             raise ValueError(f"날씨 항목 '{field}'은 유한한 숫자여야 합니다.")
+        if field in ("cloud_cover", "wind_direction_10m", "weather_code"):
+            if value != int(value):
+                raise ValueError(f"날씨 항목 '{field}'은 정수여야 합니다.")
 
     return {
         "observed_at": observed_at.isoformat().replace("+00:00", "Z"),
@@ -86,6 +94,12 @@ def parse_weather(data):
         "humidity": current["relative_humidity_2m"],
         "precipitation": current["precipitation"],
         "wind_speed": current["wind_speed_10m"],
+        "rain": current["rain"],
+        "cloud_cover": int(current["cloud_cover"]),
+        "surface_pressure": current["surface_pressure"],
+        "wind_direction": int(current["wind_direction_10m"]),
+        "wind_gusts": current["wind_gusts_10m"],
+        "weather_code": int(current["weather_code"]),
     }
 
 

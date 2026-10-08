@@ -28,7 +28,7 @@ def save_weather(conn, location_id, weather):
     """INSERT 시 True, 중복이면 False를 반환한다. 커밋은 호출자가 담당한다.
 
     UNIQUE(location_id, observed_at)가 필요하다. 관측 시각은 UTC로,
-    풍속은 수집기의 m/s 값을 그대로 저장한다. collected_at은 DB 기본값을 쓴다.
+    풍속·돌풍은 수집기의 m/s 값을 그대로 저장한다. collected_at은 DB 기본값을 쓴다.
     """
     try:
         observed_at = datetime.fromisoformat(weather["observed_at"].replace("Z", "+00:00"))
@@ -40,8 +40,10 @@ def save_weather(conn, location_id, weather):
                 INSERT INTO public.weather_records (
                     location_id, observed_at, temperature_c,
                     apparent_temperature_c, humidity_pct,
-                    precipitation_mm, wind_speed_ms
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    precipitation_mm, wind_speed_ms, rain_mm, cloud_cover_pct,
+                    surface_pressure_hpa, wind_direction_deg, wind_gusts_ms,
+                    weather_code
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (location_id, observed_at) DO NOTHING
                 RETURNING weather_id
                 """,
@@ -53,6 +55,12 @@ def save_weather(conn, location_id, weather):
                     weather["humidity"],
                     weather["precipitation"],
                     weather["wind_speed"],
+                    weather["rain"],
+                    weather["cloud_cover"],
+                    weather["surface_pressure"],
+                    weather["wind_direction"],
+                    weather["wind_gusts"],
+                    weather["weather_code"],
                 ),
             )
             return cursor.fetchone() is not None

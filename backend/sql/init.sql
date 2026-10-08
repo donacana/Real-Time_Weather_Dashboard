@@ -1,14 +1,6 @@
-CREATE TABLE locations (
-    location_id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    latitude DOUBLE PRECISION NOT NULL,
-    longitude DOUBLE PRECISION NOT NULL,
-    timezone VARCHAR(50) NOT NULL,
-    elevation_m DOUBLE PRECISION
-);
-
 CREATE TABLE weather_records (
     weather_id BIGSERIAL PRIMARY KEY,
+
     location_id INTEGER NOT NULL,
 
     observed_at TIMESTAMPTZ NOT NULL,
@@ -30,10 +22,14 @@ CREATE TABLE weather_records (
     wind_gusts_ms DOUBLE PRECISION,
 
     interval_seconds INTEGER,
+
     collected_at TIMESTAMPTZ DEFAULT NOW(),
 
     CONSTRAINT fk_weather_location
         FOREIGN KEY (location_id)
         REFERENCES locations(location_id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_weather_location_time
+        UNIQUE (location_id, observed_at)
 );

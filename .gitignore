@@ -3,3 +3,15 @@
 .idea/
 __pycache__/
 *.pyc
+# API Pipeline
+api_pipeline/.env
+api_pipeline/.venv/
+api_pipeline/**/__pycache__/
+api_pipeline/.pytest_cache/
+api_pipeline/*.sqlite3
+api_pipeline/*.db
+api_pipeline/api_samples/
+api_pipeline/full_api_export/
+api_pipeline/normalized_output/
+api_pipeline/outputs/
+api_pipeline/fixtures/
